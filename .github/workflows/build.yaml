@@ -29,5 +29,6 @@ jobs:
         with:
           push: true
           context: ./teleop_key
-          tags: 964246069091.dkr.ecr.us-east-1.amazonaws.com/teleop_key:latest
-          #tags: 964246069091.dkr.ecr.us-east-1.amazonaws.com/teleop_key:${{ github.sha }}
+          tags: |
+            964246069091.dkr.ecr.us-east-1.amazonaws.com/teleop_key:${{ github.sha }}
+            964246069091.dkr.ecr.us-east-1.amazonaws.com/teleop_key:latest
