@@ -32,3 +32,21 @@ jobs:
           tags: |
             964246069091.dkr.ecr.us-east-1.amazonaws.com/teleop_key:${{ github.sha }}
             964246069091.dkr.ecr.us-east-1.amazonaws.com/teleop_key:latest
+
+      - name: Build, tag, and push image to Amazon ECR
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          context: ./teleop_control
+          tags: |
+            964246069091.dkr.ecr.us-east-1.amazonaws.com/teleop_control:${{ github.sha }}
+            964246069091.dkr.ecr.us-east-1.amazonaws.com/teleop_control:latest
+
+      - name: Build, tag, and push image to Amazon ECR
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          context: ./linetrace_control
+          tags: |
+            964246069091.dkr.ecr.us-east-1.amazonaws.com/linetrace_control:${{ github.sha }}
+            964246069091.dkr.ecr.us-east-1.amazonaws.com/linetrace_control:latest
