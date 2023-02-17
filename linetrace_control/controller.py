@@ -9,7 +9,15 @@ def main():
     ## parse_args
     parser = argparse.ArgumentParser()
     parser.add_argument('--tello_ip')
+    parser.add_argument('--headless', action='store_true')
+    parser.add_argument('--hsv_min', nargs=3)
+    parser.add_argument('--hsv_max', nargs=3)
     args = parser.parse_args()
+
+    tello_ip = args.tello_ip if args.tello_ip else '192.168.10.1'
+    use_window = not args.headless
+    hsv_min = tuple(int(x) for x in args.hsv_min) if args.hsv_min else (0, 0, 0)
+    hsv_max = tuple(int(x) for x in args.hsv_max) if args.hsv_max else (179, 255, 255)
 
     ## init_tello
     tello = Tello(host = args.tello_ip) if args.tello_ip else Tello()
@@ -17,15 +25,16 @@ def main():
     tello.streamoff()
     tello.streamon()
 
-    ## init_window
-    window_name = 'linetrace'
-    cv2.namedWindow(window_name)
-    cv2.createTrackbar('H_min', window_name, 0, 179, lambda _: None)
-    cv2.createTrackbar('H_max', window_name, 179, 179, lambda _: None)
-    cv2.createTrackbar('S_min', window_name, 0, 255, lambda _: None)
-    cv2.createTrackbar('S_max', window_name, 255, 255, lambda _: None)
-    cv2.createTrackbar('V_min', window_name, 0, 255, lambda _: None)
-    cv2.createTrackbar('V_max', window_name, 255, 255, lambda _: None)
+    ## create_window
+    if use_window:
+        window_name = 'linetrace'
+        cv2.namedWindow(window_name)
+        cv2.createTrackbar('H_min', window_name, hsv_min[0], 179, lambda _: None)
+        cv2.createTrackbar('H_max', window_name, hsv_max[0], 179, lambda _: None)
+        cv2.createTrackbar('S_min', window_name, hsv_min[1], 255, lambda _: None)
+        cv2.createTrackbar('S_max', window_name, hsv_max[1], 255, lambda _: None)
+        cv2.createTrackbar('V_min', window_name, hsv_min[2], 255, lambda _: None)
+        cv2.createTrackbar('V_max', window_name, hsv_max[2], 255, lambda _: None)
 
     ## init socket
     sock = socket.socket(socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -47,16 +56,17 @@ def main():
         hsv_image = cv2.cvtColor(low_image, cv2.COLOR_BGR2HSV)
 
         # range of "rope" color in HSV
-        hsv_min = (
-            cv2.getTrackbarPos('H_min', window_name),
-            cv2.getTrackbarPos('S_min', window_name),
-            cv2.getTrackbarPos('V_min', window_name)
-        )
-        hsv_max = (
-            cv2.getTrackbarPos('H_max', window_name),
-            cv2.getTrackbarPos('S_max', window_name),
-            cv2.getTrackbarPos('V_max', window_name)
-        )
+        if use_window:
+            hsv_min = (
+                cv2.getTrackbarPos('H_min', window_name),
+                cv2.getTrackbarPos('S_min', window_name),
+                cv2.getTrackbarPos('V_min', window_name)
+            )
+            hsv_max = (
+                cv2.getTrackbarPos('H_max', window_name),
+                cv2.getTrackbarPos('S_max', window_name),
+                cv2.getTrackbarPos('V_max', window_name)
+            )
 
         # threshold range of "rope" color in HSV
         bin_image = cv2.inRange(hsv_image, hsv_min, hsv_max)
@@ -87,19 +97,20 @@ def main():
             cv2.putText(result_image, "%d,%d"%(mx,my), (mx, my), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 0))
 
         ## show_image
-        def align_width(image, width):
-            h, w = image.shape[:2]
-            height = round(h * (width / w))
-            return cv2.resize(image, dsize=(width, height))
+        if use_window:
+            def align_width(image, width):
+                h, w = image.shape[:2]
+                height = round(h * (width / w))
+                return cv2.resize(image, dsize=(width, height))
 
-        display_image = np.vstack((
-            align_width(small_image, 960),
-            align_width(low_image, 960),
-            align_width(cv2.cvtColor(bin_image, cv2.COLOR_GRAY2BGR), 960),
-            align_width(result_image, 960)
-        ))        
-        cv2.imshow(window_name, display_image)
-        cv2.waitKey(1)
+            display_image = np.vstack((
+                align_width(small_image, 960),
+                align_width(low_image, 960),
+                align_width(cv2.cvtColor(bin_image, cv2.COLOR_GRAY2BGR), 960),
+                align_width(result_image, 960)
+            ))
+            cv2.imshow(window_name, display_image)
+            cv2.waitKey(1)
 
         ## receive_command
         try:
@@ -143,7 +154,9 @@ def main():
             elif command == 'q':
                 break # exit_loop
 
-    cv2.destroyAllWindows()
+    ## destroy_window
+    if use_window:
+        cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     main()
