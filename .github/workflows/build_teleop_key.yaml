@@ -11,6 +11,7 @@ on:
       - reopend
       - synchronize
       - closed
+  workflow_dispatch:
 
 jobs:
   build:
